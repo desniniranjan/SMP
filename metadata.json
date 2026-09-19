@@ -1,0 +1,6 @@
+{
+  "name": "Student Activity Record Management Portal",
+  "description": "A centralized portal for engineering colleges where students record academic and extracurricular achievements and administrators verify activities with department-wise reporting.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
