@@ -33,8 +33,11 @@ export default function StudentDashboard() {
     setError('');
     try {
       const response = await activityService.getActivities();
-      if (response.success) {
-        setActivities(response.data || []);
+      if (response && response.success) {
+        const rawActivities = Array.isArray(response.data)
+          ? response.data
+          : (response.data?.activities || response.activities || []);
+        setActivities(rawActivities);
       }
     } catch (err) {
       setError(err.message || 'Failed to load activity records');
@@ -270,6 +273,22 @@ export default function StudentDashboard() {
                         {formattedDate}
                       </span>
                     </div>
+
+                    {act.verification?.remarks && (
+                      <div
+                        id={`dash-remarks-${act._id}`}
+                        className={`mt-2 p-2.5 rounded-lg text-xs flex items-start gap-2 ${
+                          act.verificationStatus === 'Approved'
+                            ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+                            : act.verificationStatus === 'Rejected'
+                            ? 'bg-rose-50 text-rose-800 border border-rose-200'
+                            : 'bg-slate-50 text-slate-700 border border-slate-200'
+                        }`}
+                      >
+                        <span className="font-semibold shrink-0">Admin Remarks:</span>
+                        <span>{act.verification.remarks}</span>
+                      </div>
+                    )}
                   </div>
 
                   <div className="flex items-center gap-3 self-end sm:self-center">

@@ -139,6 +139,11 @@ export default function ActivityTable({
                   {/* Verification Status */}
                   <td className="px-4 py-4 whitespace-nowrap">
                     <StatusBadge status={act.verificationStatus} />
+                    {act.verification?.remarks && (
+                      <div className="text-[11px] text-slate-500 max-w-[160px] truncate mt-1" title={act.verification.remarks}>
+                        "{act.verification.remarks}"
+                      </div>
+                    )}
                   </td>
 
                   {/* Actions */}

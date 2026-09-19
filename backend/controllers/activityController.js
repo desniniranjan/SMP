@@ -13,9 +13,38 @@ export const getActivities = async (req, res) => {
     if (isStudent) {
       // Student only sees their own activities
       filter.studentId = req.user._id;
+
+      const { search, category, status } = req.query;
+      if (category && category !== 'All') {
+        filter.activityCategory = category;
+      }
+      if (status && status !== 'All') {
+        filter.verificationStatus = status;
+      }
+      if (search && search.trim() !== '') {
+        const regex = new RegExp(search.trim(), 'i');
+        filter.$or = [
+          { activityTitle: regex },
+          { eventName: regex },
+          { organizer: regex },
+          { activityCategory: regex },
+          { activityId: regex },
+        ];
+      }
     } else {
-      // Admin can filter by search, category, status, and department
-      const { search, category, status, department } = req.query;
+      // Admin can filter by search, category, status, department, and studentId
+      const { search, category, status, department, studentId } = req.query;
+
+      if (studentId) {
+        if (studentId.match(/^[0-9a-fA-F]{24}$/)) {
+          filter.studentId = studentId;
+        } else {
+          const matchedStudent = await User.findOne({ userId: studentId }).select('_id');
+          if (matchedStudent) {
+            filter.studentId = matchedStudent._id;
+          }
+        }
+      }
 
       if (category && category !== 'All') {
         filter.activityCategory = category;
@@ -118,9 +147,10 @@ export const getActivityById = async (req, res) => {
     }
 
     // Role check: Student can only view their own activity
+    const activityStudentId = (activity.studentId?._id || activity.studentId)?.toString();
     if (
       req.user.role === 'student' &&
-      activity.studentId._id.toString() !== req.user._id.toString()
+      activityStudentId !== req.user._id.toString()
     ) {
       return res.status(403).json({
         success: false,
@@ -238,9 +268,10 @@ export const updateActivity = async (req, res) => {
     }
 
     const isStudent = req.user.role === 'student';
+    const activityStudentId = (activity.studentId?._id || activity.studentId)?.toString();
 
     // Student can only update their own activity
-    if (isStudent && activity.studentId.toString() !== req.user._id.toString()) {
+    if (isStudent && activityStudentId !== req.user._id.toString()) {
       return res.status(403).json({
         success: false,
         message: 'Access denied. You can only modify your own activity records.',
@@ -306,9 +337,10 @@ export const deleteActivity = async (req, res) => {
     }
 
     // Student can only delete their own activity
+    const activityStudentId = (activity.studentId?._id || activity.studentId)?.toString();
     if (
       req.user.role === 'student' &&
-      activity.studentId.toString() !== req.user._id.toString()
+      activityStudentId !== req.user._id.toString()
     ) {
       return res.status(403).json({
         success: false,

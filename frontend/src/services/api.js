@@ -1,11 +1,26 @@
-const BASE_URL = import.meta.env.VITE_API_URL || '/api';
+const getBaseUrl = () => {
+  const envUrl = import.meta.env.VITE_API_URL;
+  // If undefined, empty, or pointing to localhost while running on non-localhost domain, default to /api
+  if (
+    !envUrl ||
+    (typeof window !== 'undefined' &&
+      window.location.hostname !== 'localhost' &&
+      window.location.hostname !== '127.0.0.1' &&
+      envUrl.includes('localhost'))
+  ) {
+    return '/api';
+  }
+  return envUrl.replace(/\/+$/, '');
+};
 
 export const getAuthToken = () => {
   return localStorage.getItem('token');
 };
 
 export const apiRequest = async (endpoint, options = {}) => {
-  const url = `${BASE_URL}${endpoint}`;
+  const baseUrl = getBaseUrl();
+  const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+  const url = `${baseUrl}${cleanEndpoint}`;
   const token = getAuthToken();
 
   const headers = {

@@ -61,6 +61,22 @@ export default function ActivityCard({
               </span>
             </div>
           )}
+
+          {/* Verification Remarks */}
+          {activity.verification?.remarks && (
+            <div
+              className={`p-2 rounded-lg text-xs flex items-start gap-1.5 mt-2 ${
+                activity.verificationStatus === 'Approved'
+                  ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+                  : activity.verificationStatus === 'Rejected'
+                  ? 'bg-rose-50 text-rose-800 border border-rose-200'
+                  : 'bg-slate-50 text-slate-700 border border-slate-200'
+              }`}
+            >
+              <span className="font-semibold shrink-0">Remarks:</span>
+              <span>{activity.verification.remarks}</span>
+            </div>
+          )}
         </div>
       </div>
 

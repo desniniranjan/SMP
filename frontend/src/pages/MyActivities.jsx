@@ -37,8 +37,11 @@ export default function MyActivities() {
     setError('');
     try {
       const response = await activityService.getActivities();
-      if (response.success) {
-        setActivities(response.data || []);
+      if (response && response.success) {
+        const rawActivities = Array.isArray(response.data)
+          ? response.data
+          : (response.data?.activities || response.activities || []);
+        setActivities(rawActivities);
       }
     } catch (err) {
       setError(err.message || 'Failed to fetch student activities');

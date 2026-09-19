@@ -1,5 +1,6 @@
 import Activity from '../models/Activity.js';
 import User from '../models/User.js';
+import Verification from '../models/Verification.js';
 
 // @desc    Get department-wise activity report using MongoDB aggregation
 // @route   GET /api/reports/department-summary
@@ -99,6 +100,21 @@ export const getPortalSummary = async (req, res) => {
       .sort({ createdAt: -1 })
       .limit(5);
 
+    // Attach verification records to recent submissions
+    const recentIds = recentSubmissions.map((act) => act._id);
+    const verifications = await Verification.find({ activityId: { $in: recentIds } })
+      .populate('verifiedBy', 'name email')
+      .lean();
+    const verMap = {};
+    verifications.forEach((v) => {
+      verMap[v.activityId.toString()] = v;
+    });
+    const enrichedRecentSubmissions = recentSubmissions.map((act) => {
+      const obj = act.toObject();
+      obj.verification = verMap[act._id.toString()] || null;
+      return obj;
+    });
+
     return res.status(200).json({
       success: true,
       data: {
@@ -107,7 +123,7 @@ export const getPortalSummary = async (req, res) => {
         pendingVerification,
         approved,
         rejected,
-        recentSubmissions,
+        recentSubmissions: enrichedRecentSubmissions,
         pendingList,
       },
     });

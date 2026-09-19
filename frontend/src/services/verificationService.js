@@ -11,6 +11,20 @@ export const verificationService = {
     return await api.get(`/verification${queryString}`);
   },
 
+  getPendingActivities: async (filters = {}) => {
+    const params = new URLSearchParams();
+    params.append('status', 'Pending');
+    if (filters.category && filters.category !== 'All') params.append('category', filters.category);
+    if (filters.department && filters.department !== 'All') params.append('department', filters.department);
+
+    const queryString = params.toString() ? `?${params.toString()}` : '';
+    return await api.get(`/verification${queryString}`);
+  },
+
+  verifyActivity: async (activityId, status, remarks) => {
+    return await api.put(`/verification/${activityId}`, { status, remarks });
+  },
+
   updateVerification: async (activityId, { status, remarks }) => {
     return await api.put(`/verification/${activityId}`, { status, remarks });
   },

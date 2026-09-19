@@ -32,8 +32,10 @@ export default function AllActivities({ approvedOnly = false }) {
     setError('');
     try {
       const response = await activityService.getActivities();
-      if (response.success) {
-        let list = response.data || [];
+      if (response && response.success) {
+        let list = Array.isArray(response.data)
+          ? response.data
+          : (response.data?.activities || response.activities || []);
         if (approvedOnly) {
           list = list.filter((a) => a.verificationStatus === 'Approved');
         }
