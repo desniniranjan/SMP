@@ -86,7 +86,7 @@ For quick evaluation, the system seeds realistic student and administrator profi
 - **Frontend**: React 19, React Router v7, Tailwind CSS v4, Lucide React icons.
 - **Backend**: Node.js, Express 4, Mongoose 9, JSON Web Token (`jsonwebtoken`), `bcryptjs`, `cors`.
 - **Database**: MongoDB (Atlas or In-Memory MongoDB Server fallback).
-- **Build / Dev Engine**: Vite 8 with `@vitejs/plugin-react` and `@tailwindcss/vite`.
+- **Build / Dev Engine**: Node.js + esbuild (lightweight React JSX bundler) + Tailwind CSS compiler (pure MERN stack).
 
 ---
 
@@ -114,49 +114,50 @@ For quick evaluation, the system seeds realistic student and administrator profi
 │   │   ├── reportRoutes.js         # /api/reports routes
 │   │   └── verificationRoutes.js   # /api/verification routes
 │   └── seed/
-│       └── adminSeeder.js          # Default college admin and student records seeder
-├── frontend/
-│   ├── src/
-│   │   ├── components/
-│   │   │   ├── ActivityCard.jsx    # Responsive activity card component
-│   │   │   ├── ActivityForm.jsx    # Reusable activity submission/edit form
-│   │   │   ├── ActivityTable.jsx   # Tabular activity display with actions
-│   │   │   ├── ConfirmDialog.jsx   # Deletion confirmation modal
-│   │   │   ├── Layout.jsx          # App shell with responsive navigation
-│   │   │   ├── LoadingSpinner.jsx  # Academic loading indicators
-│   │   │   ├── Navbar.jsx          # Top navigation & user profile chip
-│   │   │   ├── ProtectedRoute.jsx  # Authentication route guard
-│   │   │   ├── RoleRoute.jsx       # Role-specific route guard (admin-only)
-│   │   │   ├── SearchBar.jsx       # Multi-faceted search and filter panel
-│   │   │   ├── Sidebar.jsx         # Role-based collapsible sidebar
-│   │   │   └── StatusBadge.jsx     # Semantic status tags
-│   │   ├── context/
-│   │   │   └── AuthContext.jsx     # Global user authentication state
-│   │   ├── pages/
-│   │   │   ├── ActivityDetails.jsx # Detailed activity audit page
-│   │   │   ├── AddActivity.jsx     # Activity submission page
-│   │   │   ├── AdminDashboard.jsx  # Administrator control dashboard
-│   │   │   ├── AdminReports.jsx    # Department analytics & CSV export
-│   │   │   ├── AllActivities.jsx   # College-wide and accredited records repo
-│   │   │   ├── EditActivity.jsx    # Activity update page
-│   │   │   ├── Home.jsx            # Academic landing page
-│   │   │   ├── Login.jsx           # Sign in page with demo credentials
-│   │   │   ├── MyActivities.jsx    # Student personal activity repository
-│   │   │   ├── Register.jsx        # Public student registration
-│   │   │   └── VerifyActivities.jsx# Verification queue & review modal
-│   │   ├── services/
-│   │   │   ├── activityService.js  # Activity API client
-│   │   │   ├── api.js              # Centralized Axios/Fetch instance with JWT interceptor
-│   │   │   ├── authService.js      # Auth API client
-│   │   │   └── verificationService.js # Admin verification & report client
-│   │   ├── App.jsx                 # Application route tree
-│   │   ├── index.css               # Tailwind CSS entry
-│   │   └── main.jsx                # React DOM root entry
-│   └── package.json
-├── server.js                       # Unified Express + Vite development and production server
-├── vite.config.js                  # Vite build configuration
+│       └── seed.js                 # Default college admin and student records seeder
+├── src/
+│   ├── components/
+│   │   ├── ActivityCard.jsx        # Responsive activity card component
+│   │   ├── ActivityForm.jsx        # Reusable activity submission/edit form
+│   │   ├── ActivityTable.jsx       # Tabular activity display with actions
+│   │   ├── ConfirmDialog.jsx       # Deletion confirmation modal
+│   │   ├── Layout.jsx              # App shell with responsive navigation
+│   │   ├── LoadingSpinner.jsx      # Academic loading indicators
+│   │   ├── Navbar.jsx              # Top navigation & user profile chip
+│   │   ├── ProtectedRoute.jsx      # Authentication route guard
+│   │   ├── RoleRoute.jsx           # Role-specific route guard (admin-only)
+│   │   ├── SearchBar.jsx           # Multi-faceted search and filter panel
+│   │   ├── Sidebar.jsx             # Role-based collapsible sidebar
+│   │   └── StatusBadge.jsx         # Semantic status tags
+│   ├── context/
+│   │   └── AuthContext.jsx         # Global user authentication state
+│   ├── pages/
+│   │   ├── ActivityDetails.jsx     # Detailed activity audit page
+│   │   ├── AddActivity.jsx         # Activity submission page
+│   │   ├── AdminDashboard.jsx      # Administrator control dashboard
+│   │   ├── AdminReports.jsx        # Department analytics & CSV export
+│   │   ├── AllActivities.jsx       # College-wide and accredited records repo
+│   │   ├── EditActivity.jsx        # Activity update page
+│   │   ├── Home.jsx                # Academic landing page
+│   │   ├── Login.jsx               # Sign in page with demo credentials
+│   │   ├── MyActivities.jsx        # Student personal activity repository
+│   │   ├── Register.jsx            # Public student registration
+│   │   └── VerifyActivities.jsx    # Verification queue & review modal
+│   ├── services/
+│   │   ├── activityService.js      # Activity API client
+│   │   ├── api.js                  # Centralized Fetch client with JWT handling
+│   │   ├── authService.js          # Auth API client
+│   │   └── verificationService.js  # Admin verification & report client
+│   ├── App.jsx                     # Application route tree
+│   ├── index.css                   # Tailwind CSS entry
+│   └── main.jsx                    # React DOM root entry
+├── public/                         # Static assets
+├── index.html                      # Single page application HTML entry
+├── server.js                       # Unified Express server (serves /api and React frontend)
+├── build.js                        # Lightweight React JSX & CSS build script
 ├── package.json                    # Project scripts & dependencies
-└── metadata.json                   # Application metadata
+├── .env.example                    # Environment variable template
+└── README.md                       # Documentation
 ```
 
 ---

@@ -40,3 +40,27 @@ export const protect = async (req, res, next) => {
     });
   }
 };
+
+export const optionalProtect = async (req, res, next) => {
+  let token;
+
+  if (
+    req.headers.authorization &&
+    req.headers.authorization.startsWith('Bearer')
+  ) {
+    try {
+      token = req.headers.authorization.split(' ')[1];
+      const secret = process.env.JWT_SECRET || 'mern_student_portal_jwt_secret_key_2026';
+      const decoded = jwt.verify(token, secret);
+
+      const user = await User.findById(decoded.id).select('-password');
+      if (user) {
+        req.user = user;
+      }
+    } catch (error) {
+      console.warn('Optional auth token warning:', error.message);
+    }
+  }
+
+  next();
+};

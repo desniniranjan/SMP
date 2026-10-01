@@ -1,23 +1,33 @@
+import mongoose from 'mongoose';
 import User from '../models/User.js';
 import { generateToken } from '../utils/generateToken.js';
 
 // @desc    Register a new student
-// @route   POST /api/auth/register
+// @route   POST /api/register or POST /api/auth/register
 // @access  Public
 export const register = async (req, res) => {
   try {
+    console.log('[AUTH] Register endpoint reached');
     const { name, email, password, confirmPassword, department } = req.body;
+    const finalConfirmPassword = confirmPassword || password;
 
     // Validation
-    if (!name || !email || !password || !confirmPassword || !department) {
+    if (!name || !email || !password || !department) {
+      console.log('[AUTH] Registration failed: Missing required fields');
       return res.status(400).json({
         success: false,
-        message: 'All fields (name, email, password, confirm password, department) are required',
+        message: 'Name, email, password, and department are required',
       });
     }
 
+    const normalizedEmail = email.trim().toLowerCase();
+    console.log('[AUTH] Registration email received:', normalizedEmail);
+
+    const isConnected = mongoose.connection.readyState === 1;
+    console.log('[AUTH] MongoDB connection state for registration:', isConnected ? 'connected' : 'disconnected');
+
     const emailRegex = /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/;
-    if (!emailRegex.test(email)) {
+    if (!emailRegex.test(normalizedEmail)) {
       return res.status(400).json({
         success: false,
         message: 'Please provide a valid email address',
@@ -31,7 +41,7 @@ export const register = async (req, res) => {
       });
     }
 
-    if (password !== confirmPassword) {
+    if (password !== finalConfirmPassword) {
       return res.status(400).json({
         success: false,
         message: 'Password confirmation does not match password',
@@ -39,8 +49,9 @@ export const register = async (req, res) => {
     }
 
     // Check if email already registered
-    const existingUser = await User.findOne({ email: email.toLowerCase().trim() });
+    const existingUser = await User.findOne({ email: normalizedEmail });
     if (existingUser) {
+      console.log('[AUTH] Registration conflict: Email already exists:', normalizedEmail);
       return res.status(400).json({
         success: false,
         message: 'A student account with this email address already exists',
@@ -55,12 +66,13 @@ export const register = async (req, res) => {
     const user = await User.create({
       userId: customUserId,
       name: name.trim(),
-      email: email.toLowerCase().trim(),
+      email: normalizedEmail,
       password,
       role: 'student', // Forced role
       department: department.trim(),
     });
 
+    console.log('[AUTH] User successfully created in MongoDB with ID:', user._id);
     const token = generateToken(user._id);
 
     return res.status(201).json({
@@ -86,29 +98,56 @@ export const register = async (req, res) => {
 };
 
 // @desc    Authenticate user (student or admin) & get token
-// @route   POST /api/auth/login
+// @route   POST /api/login or POST /api/auth/login
 // @access  Public
 export const login = async (req, res) => {
   try {
+    console.log('[AUTH] Login endpoint reached');
     const { email, password } = req.body;
 
     if (!email || !password) {
+      console.log('[AUTH] Login validation failed: Missing email or password');
       return res.status(400).json({
         success: false,
         message: 'Please provide both email and password',
       });
     }
 
-    const user = await User.findOne({ email: email.toLowerCase().trim() });
+    const normalizedEmail = email.trim().toLowerCase();
+    console.log(`[AUTH LOOKUP] Normalized target: "${normalizedEmail}" (original length: ${email.length})`);
+
+    const readyState = mongoose.connection.readyState;
+    console.log(`[AUTH LOOKUP] MongoDB Connection Verification: readyState=${readyState} (${readyState === 1 ? 'CONNECTED' : 'DISCONNECTED'})`);
+    if (readyState !== 1) {
+      console.error('[AUTH LOOKUP] ERROR: MongoDB is not connected! Aborting lookup.');
+      return res.status(500).json({
+        success: false,
+        message: 'Database connection offline. Please check MongoDB Atlas.',
+      });
+    }
+
+    console.log(`[AUTH LOOKUP] Executing query: User.findOne({ email: "${normalizedEmail}" }) on collection 'users'`);
+    const user = await User.findOne({ email: normalizedEmail });
 
     if (!user) {
+      console.log(`[AUTH LOOKUP] Query Complete: No record found for "${normalizedEmail}" in MongoDB Atlas`);
       return res.status(401).json({
         success: false,
         message: 'Invalid credentials. No user found with this email.',
       });
     }
 
+    console.log(`[AUTH LOOKUP] User Found in MongoDB Atlas:`);
+    console.log(`  - Role: ${user.role} (${user.role === 'student' ? 'Student Account' : 'Administrator'})`);
+    console.log(`  - Name: ${user.name}`);
+    console.log(`  - Department: ${user.department || 'N/A'}`);
+    console.log(`  - Student/User ID: ${user.userId}`);
+    console.log(`  - Database _id: ${user._id}`);
+
+    console.log(`[AUTH LOOKUP] Verifying password hash using bcrypt...`);
     const isMatch = await user.matchPassword(password);
+    console.log(`[AUTH LOOKUP] Password verification: ${isMatch ? 'PASSED (matched)' : 'FAILED (mismatch)'}`);
+
     if (!isMatch) {
       return res.status(401).json({
         success: false,
@@ -117,6 +156,7 @@ export const login = async (req, res) => {
     }
 
     const token = generateToken(user._id);
+    console.log(`[AUTH LOOKUP] Authentication SUCCESS for ${user.email}. JWT issued.`);
 
     return res.status(200).json({
       success: true,
