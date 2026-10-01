@@ -6,18 +6,17 @@ import fs from 'fs';
 import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
 import mongoose from 'mongoose';
-import { buildFrontend } from './build.js';
-import { connectDB } from './backend/config/db.js';
-import { seedInitialData } from './backend/seed/seed.js';
-import authRoutes from './backend/routes/authRoutes.js';
-import activityRoutes from './backend/routes/activityRoutes.js';
-import verificationRoutes from './backend/routes/verificationRoutes.js';
-import reportRoutes from './backend/routes/reportRoutes.js';
-import { getApprovedActivities } from './backend/controllers/verificationController.js';
-import { protect, optionalProtect } from './backend/middleware/authMiddleware.js';
-import { requireAdmin } from './backend/middleware/roleMiddleware.js';
-import { login, register, getMe } from './backend/controllers/authController.js';
-import User from './backend/models/User.js';
+import { connectDB } from './config/db.js';
+import { seedInitialData } from './seed/seed.js';
+import authRoutes from './routes/authRoutes.js';
+import activityRoutes from './routes/activityRoutes.js';
+import verificationRoutes from './routes/verificationRoutes.js';
+import reportRoutes from './routes/reportRoutes.js';
+import { getApprovedActivities } from './controllers/verificationController.js';
+import { protect, optionalProtect } from './middleware/authMiddleware.js';
+import { requireAdmin } from './middleware/roleMiddleware.js';
+import { login, register, getMe } from './controllers/authController.js';
+import User from './models/User.js';
 
 dotenv.config();
 
@@ -53,49 +52,37 @@ async function start() {
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
 
-  // Detailed & Safe Server-Side Auth Logging Middleware
+  // Safe Server-Side Auth Logging Middleware
   const authTraceMiddleware = (req, res, next) => {
     console.log(`\n=================== [AUTH TRACE: LOGIN REQUEST] ===================`);
     console.log(`[AUTH TRACE] Timestamp: ${new Date().toISOString()}`);
     console.log(`[AUTH TRACE] Endpoint: ${req.method} ${req.originalUrl || req.url}`);
 
-    // 1. Explicitly verify Database Connection
-    const dbStateMap = {
-      0: 'disconnected',
-      1: 'connected',
-      2: 'connecting',
-      3: 'disconnecting',
-    };
     const readyState = mongoose.connection.readyState;
     const isDbConnected = readyState === 1;
-    console.log(`[AUTH TRACE] Database Connection Status: ${isDbConnected ? 'VERIFIED (READY)' : 'NOT READY'} (readyState: ${readyState} - ${dbStateMap[readyState] || 'unknown'})`);
+    console.log(`[AUTH TRACE] Database Connection Status: ${isDbConnected ? 'VERIFIED (READY)' : 'NOT READY'}`);
     if (isDbConnected && mongoose.connection.db) {
       console.log(`[AUTH TRACE] Target Database: ${mongoose.connection.db.databaseName}`);
     }
 
-    // 2. Explicitly verify Email Normalization
     const { email } = req.body || {};
     if (!email) {
       console.log(`[AUTH TRACE] Payload Warning: Missing 'email' in request body`);
     } else {
       const rawEmail = String(email);
       const normalizedEmail = rawEmail.trim().toLowerCase();
-      console.log(`[AUTH TRACE] Email Normalization Trace:`);
-      console.log(`  - Raw length: ${rawEmail.length} chars`);
-      console.log(`  - Normalized query target: "${normalizedEmail}"`);
-      console.log(`  - Leading/trailing whitespace trimmed: ${rawEmail !== rawEmail.trim()}`);
-      console.log(`  - Case normalization applied: ${rawEmail !== rawEmail.toLowerCase()}`);
+      console.log(`[AUTH TRACE] Target Email: "${normalizedEmail}"`);
     }
     console.log(`===================================================================\n`);
     next();
   };
 
-  // Primary Auth Endpoints with Trace Middleware
+  // Primary Auth Endpoints
   app.post('/api/login', authTraceMiddleware, login);
   app.post('/api/register', register);
   app.get('/api/me', protect, getMe);
 
-  // Grouped Auth Routes (e.g., /api/auth/login, /api/auth/register, /api/auth/me)
+  // Grouped Auth Routes
   app.use('/api/auth/login', authTraceMiddleware);
   app.use('/api/auth', authRoutes);
 
@@ -125,27 +112,17 @@ async function start() {
     }
   });
 
-  // Development Database Diagnostic Endpoint
+  // Database Diagnostic Endpoint
   app.get('/api/debug/database', async (req, res) => {
-    if (process.env.NODE_ENV === 'production') {
-      return res.status(403).json({
-        error: 'Diagnostic endpoint disabled in production',
-      });
-    }
-
     try {
       const isConnected = mongoose.connection.readyState === 1;
-      let usersCollectionAccessible = false;
       let userCount = 0;
-
       if (isConnected) {
         userCount = await User.countDocuments();
-        usersCollectionAccessible = true;
       }
-
       return res.status(200).json({
         connected: isConnected,
-        usersCollectionAccessible,
+        usersCollectionAccessible: isConnected,
         userCount,
       });
     } catch (err) {
@@ -153,7 +130,7 @@ async function start() {
         connected: mongoose.connection.readyState === 1,
         usersCollectionAccessible: false,
         userCount: 0,
-        error: 'Failed to access users collection',
+        error: 'Failed to access database',
       });
     }
   });
@@ -166,7 +143,7 @@ async function start() {
     });
   });
 
-  // Handle unmatched API routes with a clean 404 JSON response instead of HTML SPA fallback
+  // Handle unmatched API routes with clean 404 JSON response
   app.all('/api/*', (req, res) => {
     res.status(404).json({
       success: false,
@@ -174,33 +151,31 @@ async function start() {
     });
   });
 
-  // Serve static assets from the React build directory (dist)
-  const distPath = path.join(__dirname, 'dist');
-  const indexHtmlPath = path.join(distPath, 'index.html');
+  // Optional Frontend static serving if frontend/dist exists
+  const frontendDistPath = path.resolve(__dirname, '../frontend/dist');
+  const indexHtmlPath = path.join(frontendDistPath, 'index.html');
 
-  // Ensure React build exists; in development, rebuild on startup to catch latest changes
-  if (process.env.NODE_ENV !== 'production' || !fs.existsSync(indexHtmlPath)) {
-    console.log('[SERVER] Ensuring latest React frontend build is ready...');
-    await buildFrontend({ isDev: process.env.NODE_ENV !== 'production' });
+  if (fs.existsSync(frontendDistPath) && fs.existsSync(indexHtmlPath)) {
+    app.use(express.static(frontendDistPath));
+    app.get('*', (req, res) => {
+      res.sendFile(indexHtmlPath);
+    });
+  } else {
+    app.get('/', (req, res) => {
+      res.json({
+        status: 'online',
+        service: 'Student Activity Record Management Portal Backend API',
+        endpoints: '/api/*'
+      });
+    });
   }
 
-  app.use(express.static(distPath));
-
-  // Client-side routing fallback for React Router SPA routes
-  app.get('*', (req, res) => {
-    if (fs.existsSync(indexHtmlPath)) {
-      res.sendFile(indexHtmlPath);
-    } else {
-      res.status(500).send('Application build missing. Please run "npm run build".');
-    }
-  });
-
   httpServer.listen(PORT, '0.0.0.0', () => {
-    console.log(`Student Activity Portal unified server running at http://0.0.0.0:${PORT}`);
+    console.log(`Student Activity Portal backend running at http://0.0.0.0:${PORT}`);
   });
 }
 
 start().catch((err) => {
-  console.error('[FATAL] Failed to start server:', err.message);
+  console.error('[FATAL] Failed to start backend server:', err.message);
   process.exit(1);
 });

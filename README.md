@@ -83,16 +83,37 @@ For quick evaluation, the system seeds realistic student and administrator profi
 
 ## 🛠️ Technology Stack
 
-- **Frontend**: React 19, React Router v7, Tailwind CSS v4, Lucide React icons.
+- **Frontend**: React 19, React Router v7, Tailwind CSS v3 (Pure JavaScript PostCSS, zero native binaries), Lucide React icons.
 - **Backend**: Node.js, Express 4, Mongoose 9, JSON Web Token (`jsonwebtoken`), `bcryptjs`, `cors`.
 - **Database**: MongoDB (Atlas or In-Memory MongoDB Server fallback).
-- **Build / Dev Engine**: Node.js + esbuild (lightweight React JSX bundler) + Tailwind CSS compiler (pure MERN stack).
+- **Build / Dev Engine**: Node.js + esbuild (lightweight React JSX bundler) + PostCSS / Tailwind CSS (pure JavaScript, cross-platform Windows/Mac/Linux).
 
 ---
 
-## 📂 Project Architecture
+## 📂 Clean Two-Part MERN Architecture
 
 ```
+SMP/
+│
+├── frontend/
+│   ├── public/
+│   ├── src/
+│   │   ├── components/
+│   │   ├── context/
+│   │   ├── hooks/
+│   │   ├── pages/
+│   │   ├── services/
+│   │   ├── utils/
+│   │   ├── App.jsx
+│   │   ├── index.css
+│   │   └── main.jsx
+│   ├── build.js
+│   ├── dev-server.js
+│   ├── index.html
+│   ├── package.json
+│   ├── postcss.config.js
+│   └── tailwind.config.js
+│
 ├── backend/
 │   ├── config/
 │   │   └── db.js                 # MongoDB connection & in-memory fallback
@@ -113,51 +134,52 @@ For quick evaluation, the system seeds realistic student and administrator profi
 │   │   ├── authRoutes.js           # /api/auth routes
 │   │   ├── reportRoutes.js         # /api/reports routes
 │   │   └── verificationRoutes.js   # /api/verification routes
-│   └── seed/
-│       └── seed.js                 # Default college admin and student records seeder
-├── src/
-│   ├── components/
-│   │   ├── ActivityCard.jsx        # Responsive activity card component
-│   │   ├── ActivityForm.jsx        # Reusable activity submission/edit form
-│   │   ├── ActivityTable.jsx       # Tabular activity display with actions
-│   │   ├── ConfirmDialog.jsx       # Deletion confirmation modal
-│   │   ├── Layout.jsx              # App shell with responsive navigation
-│   │   ├── LoadingSpinner.jsx      # Academic loading indicators
-│   │   ├── Navbar.jsx              # Top navigation & user profile chip
-│   │   ├── ProtectedRoute.jsx      # Authentication route guard
-│   │   ├── RoleRoute.jsx           # Role-specific route guard (admin-only)
-│   │   ├── SearchBar.jsx           # Multi-faceted search and filter panel
-│   │   ├── Sidebar.jsx             # Role-based collapsible sidebar
-│   │   └── StatusBadge.jsx         # Semantic status tags
-│   ├── context/
-│   │   └── AuthContext.jsx         # Global user authentication state
-│   ├── pages/
-│   │   ├── ActivityDetails.jsx     # Detailed activity audit page
-│   │   ├── AddActivity.jsx         # Activity submission page
-│   │   ├── AdminDashboard.jsx      # Administrator control dashboard
-│   │   ├── AdminReports.jsx        # Department analytics & CSV export
-│   │   ├── AllActivities.jsx       # College-wide and accredited records repo
-│   │   ├── EditActivity.jsx        # Activity update page
-│   │   ├── Home.jsx                # Academic landing page
-│   │   ├── Login.jsx               # Sign in page with demo credentials
-│   │   ├── MyActivities.jsx        # Student personal activity repository
-│   │   ├── Register.jsx            # Public student registration
-│   │   └── VerifyActivities.jsx    # Verification queue & review modal
-│   ├── services/
-│   │   ├── activityService.js      # Activity API client
-│   │   ├── api.js                  # Centralized Fetch client with JWT handling
-│   │   ├── authService.js          # Auth API client
-│   │   └── verificationService.js  # Admin verification & report client
-│   ├── App.jsx                     # Application route tree
-│   ├── index.css                   # Tailwind CSS entry
-│   └── main.jsx                    # React DOM root entry
-├── public/                         # Static assets
-├── index.html                      # Single page application HTML entry
-├── server.js                       # Unified Express server (serves /api and React frontend)
-├── build.js                        # Lightweight React JSX & CSS build script
-├── package.json                    # Project scripts & dependencies
-├── .env.example                    # Environment variable template
-└── README.md                       # Documentation
+│   ├── seed/
+│   │   └── seed.js                 # Default college admin and student records seeder
+│   ├── .env.example
+│   ├── package.json
+│   └── server.js                 # Express server & API endpoints
+│
+├── .gitignore
+└── README.md
+```
+
+---
+
+## 💻 Local Development & Startup
+
+The backend and frontend are independent applications that can be run separately or together:
+
+### 1. Backend Startup
+
+```bash
+cd backend
+npm install
+npm start
+```
+- Runs on `http://localhost:3000` (or `process.env.PORT`).
+- Connects to MongoDB (configured via `backend/.env` or in-memory fallback).
+- Exposes all REST API endpoints under `/api/*`.
+
+### 2. Frontend Startup
+
+```bash
+cd frontend
+npm install
+npm start
+```
+- Runs on `http://localhost:5173` (or `process.env.FRONTEND_PORT`).
+- Proxies `/api` requests to `http://localhost:3000`.
+- Fast, zero-Vite esbuild React development server.
+
+### 3. Unified Workspace
+
+```bash
+# From repository root:
+npm install
+npm run build
+npm start
+```
 ```
 
 ---

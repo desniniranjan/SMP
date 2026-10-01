@@ -1,10 +1,14 @@
+const API_BASE = (typeof window !== 'undefined' && window.__API_URL__)
+  ? String(window.__API_URL__).replace(/\/$/, '')
+  : '';
+
 export const resolveEndpoint = (endpoint) => {
-  if (!endpoint) return '/api';
+  if (!endpoint) return `${API_BASE}/api`;
   const clean = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
   if (clean.startsWith('/api/') || clean === '/api') {
-    return clean;
+    return `${API_BASE}${clean}`;
   }
-  return `/api${clean}`;
+  return `${API_BASE}/api${clean}`;
 };
 
 export const getAuthToken = () => {
