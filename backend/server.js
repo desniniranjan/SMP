@@ -151,9 +151,19 @@ async function start() {
     });
   });
 
-  // Optional Frontend static serving if frontend/dist exists
+  // Serve frontend static build on port 3000
   const frontendDistPath = path.resolve(__dirname, '../frontend/dist');
   const indexHtmlPath = path.join(frontendDistPath, 'index.html');
+
+  if (!fs.existsSync(indexHtmlPath)) {
+    console.log('[SERVER] frontend/dist not found. Triggering frontend build...');
+    try {
+      const { execSync } = await import('child_process');
+      execSync('npm --prefix ../frontend run build', { stdio: 'inherit' });
+    } catch (buildErr) {
+      console.warn('[SERVER] Warning: Failed to automatically build frontend:', buildErr.message);
+    }
+  }
 
   if (fs.existsSync(frontendDistPath) && fs.existsSync(indexHtmlPath)) {
     app.use(express.static(frontendDistPath));
